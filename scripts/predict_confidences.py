@@ -45,6 +45,7 @@ import mos4d.models.models as models
     help="Transform point clouds to common viewpoint.",
 )
 def main(weights, sequence, dt, poses, transform):
+    torch.set_float32_matmul_precision('medium')
     cfg = torch.load(weights)["hyper_parameters"]
 
     if poses:
@@ -77,7 +78,7 @@ def main(weights, sequence, dt, poses, transform):
     model.freeze()
 
     # Setup trainer
-    trainer = Trainer(gpus=1, logger=False)
+    trainer = Trainer(accelerator="auto", logger=False)
 
     # Infer!
     trainer.predict(model, data.test_dataloader())

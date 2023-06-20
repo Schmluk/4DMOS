@@ -73,7 +73,7 @@ class MOSNet(LightningModule):
         torch.cuda.empty_cache()
         return {"loss": loss, "dict_confusion_matrix": dict_confusion_matrix}
 
-    def training_epoch_end(self, training_step_outputs):
+    def on_train_epoch_end(self, training_step_outputs):
         list_dict_confusion_matrix = [
             output["dict_confusion_matrix"] for output in training_step_outputs
         ]
@@ -104,7 +104,7 @@ class MOSNet(LightningModule):
         torch.cuda.empty_cache()
         return dict_confusion_matrix
 
-    def validation_epoch_end(self, validation_step_outputs):
+    def on_validation_epoch_end(self, validation_step_outputs):
         for s in range(self.n_past_steps):
             agg_confusion_matrix = torch.zeros(self.n_classes, self.n_classes)
             for dict_confusion_matrix in validation_step_outputs:

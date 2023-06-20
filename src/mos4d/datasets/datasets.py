@@ -43,14 +43,14 @@ class KittiSequentialModule(LightningDataModule):
     def setup(self, stage=None):
         """Dataloader and iterators for training, validation and test data"""
 
-        ########## Point dataset splits
+        # Point dataset splits
         train_set = KittiSequentialDataset(self.cfg, split="train")
 
         val_set = KittiSequentialDataset(self.cfg, split="val")
 
         test_set = KittiSequentialDataset(self.cfg, split="test")
 
-        ########## Generate dataloaders and iterables
+        # Generate dataloaders and iterables
 
         self.train_loader = DataLoader(
             dataset=train_set,
@@ -133,7 +133,8 @@ class KittiSequentialDataset(Dataset):
         self.filename_poses = cfg["DATA"]["POSES"]
 
         # Semantic information
-        self.semantic_config = yaml.safe_load(open(cfg["DATA"]["SEMANTIC_CONFIG_FILE"]))
+        self.semantic_config = yaml.safe_load(
+            open(cfg["DATA"]["SEMANTIC_CONFIG_FILE"]))
 
         self.n_past_steps = self.cfg["MODEL"]["N_PAST_STEPS"]
 
@@ -173,15 +174,21 @@ class KittiSequentialDataset(Dataset):
 
             scan_path = os.path.join(path_to_seq, "velodyne")
             self.filenames[seq] = load_files(scan_path)
+
+            print(
+                f"Loading sequence {seq} from '{scan_path}' with {len(self.filenames[seq])} scans.")
             if self.transform:
                 self.poses[seq] = self.read_poses(path_to_seq)
+                print("Length of poses: ", len(self.poses[seq]))
+                print("Length of filenames: ", len(self.filenames[seq]))
                 assert len(self.poses[seq]) == len(self.filenames[seq])
             else:
                 self.poses[seq] = []
 
             # Get number of sequences based on number of past steps
             n_samples_sequence = max(
-                0, len(self.filenames[seq]) - self.skip * (self.n_past_steps - 1)
+                0, len(self.filenames[seq]) -
+                self.skip * (self.n_past_steps - 1)
             )
 
             # Add to idx mapping
@@ -209,7 +216,7 @@ class KittiSequentialDataset(Dataset):
         from_idx = scan_idx - self.skip * (self.n_past_steps - 1)
         to_idx = scan_idx + 1
         past_indices = list(range(from_idx, to_idx, self.skip))
-        past_files = self.filenames[seq][from_idx : to_idx : self.skip]
+        past_files = self.filenames[seq][from_idx: to_idx: self.skip]
         list_past_point_clouds = [self.read_point_cloud(f) for f in past_files]
         for i, pcd in enumerate(list_past_point_clouds):
 
@@ -226,7 +233,8 @@ class KittiSequentialDataset(Dataset):
 
         # Load past labels
         label_files = [
-            os.path.join(self.root_dir, str(seq).zfill(2), "labels", str(i).zfill(6) + ".label")
+            os.path.join(self.root_dir, str(seq).zfill(
+                2), "labels", str(i).zfill(6) + ".label")
             for i in past_indices
         ]
 
@@ -238,7 +246,8 @@ class KittiSequentialDataset(Dataset):
         past_labels = torch.cat(list_past_labels, dim=0)
 
         if self.augment:
-            past_point_clouds, past_labels = self.augment_data(past_point_clouds, past_labels)
+            past_point_clouds, past_labels = self.augment_data(
+                past_point_clouds, past_labels)
 
         meta = (seq, scan_idx, past_indices)
         return [meta, past_point_clouds, past_labels]
@@ -275,7 +284,8 @@ class KittiSequentialDataset(Dataset):
             mapped_labels = copy.deepcopy(labels)
             for k, v in self.semantic_config["learning_map"].items():
                 mapped_labels[labels == k] = v
-            selected_labels = torch.Tensor(mapped_labels.astype(np.float32)).long()
+            selected_labels = torch.Tensor(
+                mapped_labels.astype(np.float32)).long()
             selected_labels = selected_labels.reshape((-1, 1))
             return selected_labels
         else:
@@ -303,6 +313,7 @@ class KittiSequentialDataset(Dataset):
         # convert kitti poses from camera coord to LiDAR coord
         new_poses = []
         for pose in poses:
-            new_poses.append(T_velo_cam.dot(inv_frame0).dot(pose).dot(T_cam_velo))
+            new_poses.append(T_velo_cam.dot(
+                inv_frame0).dot(pose).dot(T_cam_velo))
         poses = np.array(new_poses)
         return poses
